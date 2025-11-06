@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Города — Топ игроков</title>
+<style>
+  :root{
+    --bg:#0b0f14;
+    --card:#0f1720;
+    --muted:#98a0ab;
+    --accent:#6ee7b7;
+    --accent2:#7dd3fc;
+    --glass: rgba(255,255,255,0.03);
+    --danger:#ff6b6b;
+  }
+  html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", Roboto, sans-serif;background:linear-gradient(180deg,#05060a 0%, #0b0f14 100%);color:#e6eef6}
+  .wrap{max-width:980px;margin:32px auto;padding:20px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  h1{font-size:20px;margin:0;color:var(--accent)}
+  p.lead{margin:0;color:var(--muted);font-size:13px}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:16px;box-shadow: 0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+  .controls{display:flex;gap:8px;align-items:center}
+  .refresh{background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+  .refresh:hover{color:var(--accent2)}
+  .top-table{width:100%;border-collapse:collapse;margin-top:12px}
+  .top-table th,.top-table td{padding:10px 12px;text-align:left;font-size:14px}
+  .top-table th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px dashed rgba(255,255,255,0.03)}
+  .row{border-bottom:1px solid rgba(255,255,255,0.02)}
+  .rank{width:56px;font-weight:700;color:var(--accent2)}
+  .usercell{display:flex;gap:10px;align-items:center}
+  .avatar{width:38px;height:38px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#051826;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 10px rgba(2,6,23,0.6)}
+  .username{font-weight:600}
+  .country{color:var(--muted);font-size:12px}
+  .wins{font-weight:700;color:var(--accent)}
+  .streak{font-size:13px;color:var(--muted)}
+  .hint{margin-top:10px;color:var(--muted);font-size:13px}
+  .empty{padding:40px;text-align:center;color:var(--muted)}
+  .error{color:var(--danger);font-weight:600}
+  @media(max-width:600px){
+    .wrap{padding:12px}
+    .top-table th,.top-table td{padding:10px 8px;font-size:13px}
+    .avatar{width:34px;height:34px}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Города — Топ игроков</h1>
+        <p class="lead">Сравнивай победы и лучшие серии — соревнуйтесь за первое место!</p>
+      </div>
+      <div class="controls">
+        <button id="refreshBtn" class="refresh" title="Обновить">Обновить</button>
+      </div>
+    </header>
+
+    <div class="card" id="card">
+      <div id="loading" class="empty">Загрузка топа... ⏳</div>
+
+      <table id="table" class="top-table" style="display:none">
+        <thead>
+          <tr>
+            <th class="rank">#</th>
+            <th>Игрок</th>
+            <th>Побед</th>
+            <th>Лучшая серия</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+
+      <div id="fallback" style="display:none" class="empty">
+        <div class="error">Топ недоступен</div>
+        <div style="margin-top:8px;color:var(--muted)">Страница пытается получить данные с сервера. Если у вас локально нет API, вы увидите пример.</div>
+        <div style="margin-top:14px;text-align:left;max-width:760px;margin-left:auto;margin-right:auto">
+          <table class="top-table">
+            <thead>
+              <tr><th class="rank">#</th><th>Игрок</th><th>Побед</th><th>Лучшая серия</th></tr>
+            </thead>
+            <tbody>
+              <tr class="row"><td class="rank">1</td><td class="usercell"><div class="avatar">AB</div><div><div class="username">Player1</div><div class="country">Россия</div></div></td><td class="wins">123</td><td class="streak">10</td></tr>
+              <tr class="row"><td class="rank">2</td><td class="usercell"><div class="avatar">CD</div><div><div class="username">Player2</div><div class="country">Казахстан</div></div></td><td class="wins">98</td><td class="streak">8</td></tr>
+              <tr class="row"><td class="rank">3</td><td class="usercell"><div class="avatar">EF</div><div><div class="username">Player3</div><div class="country">Украина</div></div></td><td class="wins">87</td><td class="streak">7</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="hint">Если ваш бот публикует API, страница покажет живой топ. Обновляется автоматически каждые 15 секунд.</div>
+    </div>
+  </div>
+
+<script>
+  const refreshBtn = document.getElementById('refreshBtn');
+  const loading = document.getElementById('loading');
+  const table = document.getElementById('table');
+  const tbody = document.getElementById('tbody');
+  const fallback = document.getElementById('fallback');
+
+  async function fetchTop(){
+    loading.style.display = '';
+    table.style.display = 'none';
+    fallback.style.display = 'none';
+    tbody.innerHTML = '';
+    try {
+      const resp = await fetch('/api/top', {cache: 'no-store'});
+      if(!resp.ok) throw new Error('no data');
+      const data = await resp.json();
+
+      if(!Array.isArray(data) || data.length === 0){
+        loading.textContent = 'Топ пока пуст.';
+        return;
+      }
+
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'row';
+        const rankTd = document.createElement('td'); rankTd.className='rank'; rankTd.textContent = item.rank;
+        const userTd = document.createElement('td');
+        userTd.innerHTML = `<div class="usercell">
+          <div class="avatar">${avatarLetters(item.username)}</div>
+          <div><div class="username">${escapeHtml(item.username)}</div><div class="country">${escapeHtml(item.country || '')}</div></div>
+        </div>`;
+        const winsTd = document.createElement('td'); winsTd.className='wins'; winsTd.textContent = item.wins;
+        const streakTd = document.createElement('td'); streakTd.className='streak'; streakTd.textContent = item.max_streak ?? '-';
+
+        tr.appendChild(rankTd);
+        tr.appendChild(userTd);
+        tr.appendChild(winsTd);
+        tr.appendChild(streakTd);
+        tbody.appendChild(tr);
+      });
+
+      loading.style.display = 'none';
+      table.style.display = '';
+    } catch (e) {
+      // показать запасной контент
+      loading.style.display = 'none';
+      table.style.display = 'none';
+      fallback.style.display = '';
+    }
+  }
+
+  function avatarLetters(name){
+    if(!name) return '??';
+    const parts = name.trim().split(/\s+/);
+    if(parts.length===1) return (parts[0][0]||'?').toUpperCase()+ (parts[0][1]||'').toUpperCase();
+    return (parts[0][0]||'?').toUpperCase() + (parts[1][0]||'').toUpperCase();
+  }
+
+  function escapeHtml(str){
+    return String(str || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+
+  refreshBtn.addEventListener('click', fetchTop);
+
+  // initial load + polling
+  fetchTop();
+  setInterval(fetchTop, 15000);
+</script>
+</body>
+</html>

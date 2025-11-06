@@ -1,4 +1,4 @@
-# bot.py
+# bot.py 
 import os
 import asyncio
 import random
@@ -529,10 +529,30 @@ async def handle_api_top(request: web.Request):
         })
     return web.json_response(result)
 
+# Новый обработчик для пинга UptimeRobot / health checks
+async def handle_uptime_ping(request: web.Request):
+    """
+    Быстрый ответ для мониторинга (UptimeRobot, Render и т.п.).
+    Поддерживает GET/HEAD/POST — возвращает 200 OK.
+    """
+    # опционально можно логировать source ip / тело, но не обязательно
+    # body = await request.text()  # не нужно, чтобы ответ был быстрым
+    return web.Response(text="OK", status=200)
+
 async def start_web_server():
     app = web.Application()
     app.router.add_get("/", handle_index)
     app.router.add_get("/api/top", handle_api_top)
+
+    # маршруты для приёма пинга от UptimeRobot / health checks
+    # поддерживаем основные HTTP методы — GET/HEAD/POST
+    app.router.add_get("/ping", handle_uptime_ping)
+    app.router.add_head("/ping", handle_uptime_ping)
+    app.router.add_post("/ping", handle_uptime_ping)
+
+    # дополнительный "стандартный" путь для health checks
+    app.router.add_get("/healthz", handle_uptime_ping)
+    app.router.add_head("/healthz", handle_uptime_ping)
 
     runner = web.AppRunner(app)
     await runner.setup()

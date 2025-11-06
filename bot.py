@@ -545,14 +545,13 @@ async def start_web_server():
     app.router.add_get("/api/top", handle_api_top)
 
     # маршруты для приёма пинга от UptimeRobot / health checks
-    # поддерживаем основные HTTP методы — GET/HEAD/POST
+    # поддерживаем основные HTTP методы — GET/POST (HEAD обрабатывается автоматически aiohttp)
     app.router.add_get("/ping", handle_uptime_ping)
-    app.router.add_head("/ping", handle_uptime_ping)
     app.router.add_post("/ping", handle_uptime_ping)
 
     # дополнительный "стандартный" путь для health checks
     app.router.add_get("/healthz", handle_uptime_ping)
-    app.router.add_head("/healthz", handle_uptime_ping)
+    app.router.add_post("/healthz", handle_uptime_ping)
 
     runner = web.AppRunner(app)
     await runner.setup()

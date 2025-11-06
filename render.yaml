@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: citybot
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: TOKEN
+        sync: false
